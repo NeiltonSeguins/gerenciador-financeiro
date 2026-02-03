@@ -1,0 +1,21 @@
+# Bytes compilados do Python
+__pycache__/
+*.pyc
+
+# Ambientes Virtuais
+venv/
+.venv/
+env/
+
+# Dados e Credenciais (CRÍTICO)
+credentials.json
+.env
+data/
+*.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDEs
+.vscode/
+.idea/
