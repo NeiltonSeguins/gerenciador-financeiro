@@ -45,6 +45,9 @@ def init_db():
 
 def clean_amount(value):
     """Trata valores numéricos vindos da planilha (floats ou strings formatadas)."""
+    # Debug para o console do Streamlit Cloud
+    print(f"DEBUG_CLEAN: Entrada={repr(value)} Tipo={type(value)}")
+
     if isinstance(value, (int, float)):
         return float(value)
         
@@ -55,13 +58,20 @@ def clean_amount(value):
         if not value:
             return 0.0
             
-        # Tenta converter direto (ex: "570.15")
-        try:
-             return float(value)
-        except ValueError:
-             pass
-             
-        # Tenta formato brasileiro (ex: "1.000,50" -> "1000.50")
+        # O Google Sheets as vezes manda formatos com ponto de milhar se estiver configurado errado
+        # Se UNFORMATTED_VALUE funcionar, nem deveríamos cair aqui com tanta frequencia para números.
+        
+        # Analise de ambiguidade:
+        # Se tem APENAS UM PONTO e NENHUMA VIRGULA (ex: "570.15"), é decimal (formato US/Python).
+        if "." in value and "," not in value:
+            if value.count(".") == 1:
+                try:
+                    return float(value)
+                except ValueError:
+                    pass
+
+        # Se tem virgula (ex: "570,15" ou "1.000,50"), assume formato BR
+        # Também cobre casos estranhos onde ponto é milhar ("1.000")
         try:
             # Remove ponto de milhar e troca virgula decimal por ponto
             v_br = value.replace(".", "").replace(",", ".")
@@ -79,6 +89,7 @@ def add_transaction(date, category, transaction_type, amount, payment_method, de
     new_id = str(uuid.uuid4())
     
     # Prepara a linha (Converta valores para string/float conforme necessário)
+    # Importante: enviar float nativo para o Sheets salvar como número
     row = [
         new_id,
         str(date),
@@ -95,7 +106,8 @@ def get_transactions():
     """Retorna todas as transações como um DataFrame do Pandas."""
     try:
         sheet = get_worksheet()
-        data = sheet.get_all_records()
+        # UNFORMATTED_VALUE garante que números venham como floats e não strings formatadas (R$ ...)
+        data = sheet.get_all_records(value_render_option='UNFORMATTED_VALUE')
         
         # Se estiver vazio (nem cabeçalho tem), tenta inicializar
         if not data:
