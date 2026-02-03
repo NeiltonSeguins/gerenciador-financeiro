@@ -43,6 +43,34 @@ def init_db():
     except Exception as e:
         print(f"Erro ao conectar com Google Sheets: {e}")
 
+def clean_amount(value):
+    """Trata valores numéricos vindos da planilha (floats ou strings formatadas)."""
+    if isinstance(value, (int, float)):
+        return float(value)
+        
+    if isinstance(value, str):
+        # Remove espaços e R$
+        value = value.replace("R$", "").strip()
+        
+        if not value:
+            return 0.0
+            
+        # Tenta converter direto (ex: "570.15")
+        try:
+             return float(value)
+        except ValueError:
+             pass
+             
+        # Tenta formato brasileiro (ex: "1.000,50" -> "1000.50")
+        try:
+            # Remove ponto de milhar e troca virgula decimal por ponto
+            v_br = value.replace(".", "").replace(",", ".")
+            return float(v_br)
+        except ValueError:
+            return 0.0
+            
+    return 0.0
+
 def add_transaction(date, category, transaction_type, amount, payment_method, description):
     """Adiciona uma nova transação na planilha."""
     sheet = get_worksheet()
