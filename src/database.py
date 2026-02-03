@@ -81,6 +81,22 @@ def clean_amount(value):
             
     return 0.0
 
+def clean_date(value):
+    """Trata datas vindas da planilha (Serial Date ou String)."""
+    # Se for int (Serial Date do Excel: dias desde 30/12/1899)
+    if isinstance(value, (int, float)):
+        try:
+             # Base date do Excel (windows)
+             return pd.to_datetime('1899-12-30') + pd.to_timedelta(value, unit='D')
+        except:
+             return pd.NaT
+             
+    # Se for string
+    try:
+        return pd.to_datetime(value)
+    except:
+        return pd.NaT
+
 def add_transaction(date, category, transaction_type, amount, payment_method, description):
     """Adiciona uma nova transação na planilha."""
     sheet = get_worksheet()
@@ -119,6 +135,10 @@ def get_transactions():
             
         df = pd.DataFrame(data)
         
+        # Converte a coluna de data usando nossa função robusta
+        if not df.empty and "date" in df.columns:
+            df["date"] = df["date"].apply(clean_date)
+
         # Garante que 'amount' é numérico (planilha as vezes retorna como string)
         # Remove símbolos de moeda se houver (ex: "R$ 100") e substitui vírgula
         if not df.empty and "amount" in df.columns:
