@@ -82,8 +82,8 @@ def get_transactions():
         # Garante que 'amount' é numérico (planilha as vezes retorna como string)
         # Remove símbolos de moeda se houver (ex: "R$ 100") e substitui vírgula
         if not df.empty and "amount" in df.columns:
-             # Se vier como string, limpamos. Se já for float, o pandas lida bem.
-             df["amount"] = pd.to_numeric(df["amount"], errors='coerce').fillna(0.0)
+             # Aplica a limpeza robusta em cada valor
+             df["amount"] = df["amount"].apply(clean_amount)
              
         return df
     except Exception as e:
